@@ -1,0 +1,871 @@
+
+<!DOCTYPE html><html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="hexo-theme" content="https://github.com/xaoxuu/hexo-theme-stellar/tree/1.33.1" theme-name="Stellar" theme-version="1.33.1">
+  
+  
+  <meta name="generator" content="Hexo 8.1.2">
+  <meta http-equiv='x-dns-prefetch-control' content='on' />
+  
+  <meta name="renderer" content="webkit">
+  <meta name="force-rendering" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta name="HandheldFriendly" content="True" >
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000">
+  <meta name="theme-color" content="#f9fafb">
+  <title>极小离线渲染实现 - z-blog</title>
+
+  
+    <meta name="description" content="极小离线渲染实现我的第一篇博文。记录一下我写出的一个极小的 cpp 渲染器。 基本对象的定义参考了《Physically Based Rendering: From Theory to Implementation 3rd》。 目前实现了简单的光照模型，为了使得效果明显，该图使用 lambert diffuse + ambient(float)。 渲染效果如下：   基本对象定义首先按照 pbrt">
+<meta property="og:type" content="article">
+<meta property="og:title" content="极小离线渲染实现">
+<meta property="og:url" content="http://example.com/2026/05/14/first-renderer/">
+<meta property="og:site_name" content="z-blog">
+<meta property="og:description" content="极小离线渲染实现我的第一篇博文。记录一下我写出的一个极小的 cpp 渲染器。 基本对象的定义参考了《Physically Based Rendering: From Theory to Implementation 3rd》。 目前实现了简单的光照模型，为了使得效果明显，该图使用 lambert diffuse + ambient(float)。 渲染效果如下：   基本对象定义首先按照 pbrt">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/img/output1_1.png">
+<meta property="article:published_time" content="2026-05-14T07:00:00.000Z">
+<meta property="article:modified_time" content="2026-05-15T04:42:43.202Z">
+<meta property="article:author" content="za-co">
+<meta property="article:tag" content="C++">
+<meta property="article:tag" content="Graphics">
+<meta property="article:tag" content="RayTracing">
+<meta property="article:tag" content="Renderer">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/img/output1_1.png">
+  
+  
+  
+  <meta name="keywords" content="C++,Renderer,RayTracing,Graphics">
+
+  <!-- feed -->
+  
+
+  <link rel="stylesheet" href="/css/main.css?v=1.33.1">
+
+
+  
+
+  
+
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"za-co","sameAs":[]},"dateCreated":"2026-05-14T00:00:00-07:00","dateModified":"2026-05-14T21:42:43-07:00","datePublished":"2026-05-14T00:00:00-07:00","description":"","headline":"极小离线渲染实现","mainEntityOfPage":{"@type":"WebPage","@id":"http://example.com/2026/05/14/first-renderer/"},"publisher":{"@type":"Organization","name":"za-co","sameAs":[]},"url":"http://example.com/2026/05/14/first-renderer/","keywords":"C++, Renderer, RayTracing, Graphics","thumbnailUrl":"/img/output1_1.png","image":1}</script>
+  
+</head>
+<body>
+
+<div class="l_body content" id="start" layout="post" type="tech" ><aside class="l_left"><div class="sidebg"></div><div class="leftbar-container">
+
+
+<header class="header"><div class="logo-wrap"><a class="avatar" href="/about/"><div class="bg" style="opacity:0;background-image:url(https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/rainbow64@3x.webp);"></div><img no-lazy class="avatar" src="undefined" onerror="javascript:this.classList.add('error');this.src='https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/image/2659360.svg';"></a><a class="title" href="/"><div class="main">z-blog</div></a></div></header>
+
+<div class="nav-area">
+
+<nav class="menu dis-select"></nav>
+</div>
+<div class="widgets">
+<div class="search-wrapper" id="search-wrapper"><form class="search-form"><a class="search-button" onclick="document.getElementById(&quot;search-input&quot;).focus();"><svg t="1705074644177" viewBox="0 0 1025 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1560" width="200" height="200"><path d="M1008.839137 935.96571L792.364903 719.491476a56.783488 56.783488 0 0 0-80.152866 0 358.53545 358.53545 0 1 1 100.857314-335.166073 362.840335 362.840335 0 0 1-3.689902 170.145468 51.248635 51.248635 0 1 0 99.217358 26.444296 462.057693 462.057693 0 1 0-158.255785 242.303546l185.930047 185.725053a51.248635 51.248635 0 0 0 72.568068 0 51.248635 51.248635 0 0 0 0-72.978056z" p-id="1561"></path><path d="M616.479587 615.969233a50.428657 50.428657 0 0 0-61.498362-5.534852 174.655348 174.655348 0 0 1-177.525271 3.484907 49.403684 49.403684 0 0 0-58.833433 6.76482l-3.074918 2.869923a49.403684 49.403684 0 0 0 8.609771 78.10292 277.767601 277.767601 0 0 0 286.992355-5.739847 49.403684 49.403684 0 0 0 8.404776-76.667958z" p-id="1562"></path></svg></a><input type="text" class="search-input" id="search-input" placeholder="Search"></form><div id="search-result"></div><div class="search-no-result">No Results!</div></div>
+
+
+
+<widget class="widget-wrapper recent post-list"><div class="widget-header dis-select"><span class="name">Recent Update</span></div><div class="widget-body fs14"><a class="item title" href="/2026/05/14/first-renderer/"><span class="title">极小离线渲染实现</span></a><a class="item title" href="/2026/05/14/hello-world/"><span class="title">Hello World</span></a></div></widget>
+</div>
+
+</div></aside><div class="l_main" id="main">
+
+
+
+
+
+<div class="article banner top">
+  <div class="content">
+    <div class="top bread-nav footnote"><div class="left"><div class="flex-row" id="breadcrumb"><a class="cap breadcrumb" href="/">Home</a>
+<span class="sep"></span><a class="cap breadcrumb" href="/">Blog</a><span class="sep"></span><a class="cap breadcrumb-link" href="/categories/Graphics/">Graphics</a></div>
+<div class="flex-row" id="post-meta"><span class="text created">Posted on: <time datetime="2026-05-14T07:00:00.000Z">2026-05-14</time></span><span class="sep updated"></span><span class="text updated">Updated on: <time datetime="2026-05-15T04:42:43.202Z">2026-05-14</time></span></div></div></div>
+    
+    <div class="bottom only-title">
+      
+      <div class="text-area">
+        <h1 class="text title"><span>极小离线渲染实现</span></h1>
+        
+      </div>
+    </div>
+    
+  </div>
+  </div><article class="md-text content"><h1 id="极小离线渲染实现"><a href="#极小离线渲染实现" class="headerlink" title="极小离线渲染实现"></a>极小离线渲染实现</h1><p>我的第一篇博文。<br>记录一下我写出的一个极小的 cpp 渲染器。</p>
+<p>基本对象的定义参考了《Physically Based Rendering: From Theory to Implementation 3rd》。</p>
+<p>目前实现了简单的光照模型，为了使得效果明显，该图使用 <code>lambert diffuse + ambient(float)</code>。</p>
+<p>渲染效果如下：</p>
+<p><img src="/img/output1_1.png"></p>
+<hr>
+<h1 id="基本对象定义"><a href="#基本对象定义" class="headerlink" title="基本对象定义"></a>基本对象定义</h1><p>首先按照 pbrt 的思想定义基本对象，目前仅需要：</p>
+<ul>
+<li>vec（vector）</li>
+<li>dot（point）</li>
+<li>ray</li>
+</ul>
+<p>的三维坐标系即可。</p>
+<hr>
+<h1 id="vec3-与-dot3-的实现"><a href="#vec3-与-dot3-的实现" class="headerlink" title="vec3 与 dot3 的实现"></a>vec3 与 dot3 的实现</h1><p>可以有更简洁的构造函数，但这样更明了，更数学，不是吗。</p>
+<h2 id="vec3"><a href="#vec3" class="headerlink" title="vec3"></a>vec3</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    T x, y, z; <span class="comment">// 3D vector components (x,y,z)</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// constructors</span></span><br><span class="line">    <span class="comment">/** @brief default constructor (0,0,0) */</span></span><br><span class="line">    <span class="built_in">vec3</span>() &#123;</span><br><span class="line">        <span class="keyword">this</span>-&gt;x = <span class="built_in">T</span>(<span class="number">0</span>);</span><br><span class="line">        <span class="keyword">this</span>-&gt;y = <span class="built_in">T</span>(<span class="number">0</span>); </span><br><span class="line">        <span class="keyword">this</span>-&gt;z = <span class="built_in">T</span>(<span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** @brief parameterized constructor */</span></span><br><span class="line">    <span class="built_in">vec3</span>(T x_val, T y_val, T z_val) &#123;</span><br><span class="line">        <span class="keyword">this</span>-&gt;x = x_val;</span><br><span class="line">        <span class="keyword">this</span>-&gt;y = y_val;</span><br><span class="line">        <span class="keyword">this</span>-&gt;z = z_val;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * @brief vec[0] = x, vec[1] = y, vec[2] = z </span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    T <span class="keyword">operator</span> [] (<span class="type">int</span> i) <span class="type">const</span> &#123;</span><br><span class="line">        <span class="keyword">switch</span> (i) &#123;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">0</span>: <span class="keyword">return</span> <span class="keyword">this</span>-&gt;x;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">1</span>: <span class="keyword">return</span> <span class="keyword">this</span>-&gt;y;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">2</span>: <span class="keyword">return</span> <span class="keyword">this</span>-&gt;z;</span><br><span class="line">            <span class="keyword">default</span>: <span class="keyword">return</span> <span class="built_in">T</span>(<span class="number">0</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * @brief calculate the length of the vector</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="type">float</span> <span class="title">length</span><span class="params">()</span> <span class="type">const</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> std::<span class="built_in">sqrt</span>(<span class="keyword">this</span>-&gt;x * <span class="keyword">this</span>-&gt;x + <span class="keyword">this</span>-&gt;y * <span class="keyword">this</span>-&gt;y + <span class="keyword">this</span>-&gt;z * <span class="keyword">this</span>-&gt;z);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">float</span> <span class="title">length_squared</span><span class="params">()</span> <span class="type">const</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>-&gt;x * <span class="keyword">this</span>-&gt;x + <span class="keyword">this</span>-&gt;y * <span class="keyword">this</span>-&gt;y + <span class="keyword">this</span>-&gt;z * <span class="keyword">this</span>-&gt;z;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * @brief normalize</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">vec3 <span class="title">normalize</span><span class="params">()</span> <span class="type">const</span> </span>&#123;</span><br><span class="line">        <span class="type">float</span> len = <span class="keyword">this</span>-&gt;<span class="built_in">length</span>();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (len &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">vec3</span>(<span class="keyword">this</span>-&gt;x / len, <span class="keyword">this</span>-&gt;y / len, <span class="keyword">this</span>-&gt;z / len);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">vec3</span>(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>); <span class="comment">// return zero vector if length is zero to avoid division by zero</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// other operations</span></span><br><span class="line">    <span class="function">T <span class="title">min_component</span><span class="params">()</span> <span class="type">const</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> std::<span class="built_in">min</span>(<span class="keyword">this</span>-&gt;x, std::<span class="built_in">min</span>(<span class="keyword">this</span>-&gt;y, <span class="keyword">this</span>-&gt;z));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function">T <span class="title">max_component</span><span class="params">()</span> <span class="type">const</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> std::<span class="built_in">max</span>(<span class="keyword">this</span>-&gt;x, std::<span class="built_in">max</span>(<span class="keyword">this</span>-&gt;y, <span class="keyword">this</span>-&gt;z));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function">T <span class="title">max_dimension</span><span class="params">()</span> <span class="type">const</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">this</span>-&gt;x &gt; <span class="keyword">this</span>-&gt;y &amp;&amp; <span class="keyword">this</span>-&gt;x &gt; <span class="keyword">this</span>-&gt;z) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span>; <span class="comment">// x is largest</span></span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (<span class="keyword">this</span>-&gt;y &gt; <span class="keyword">this</span>-&gt;z) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>; <span class="comment">// y is largest</span></span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">2</span>; <span class="comment">// z is largest</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">friend</span> vec3 <span class="title">min</span><span class="params">(vec3&lt;T&gt;&amp; v1, vec3&lt;T&gt;&amp; v2)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">vec3</span>(</span><br><span class="line">            std::<span class="built_in">min</span>(v<span class="number">1.</span>x, v<span class="number">2.</span>x),</span><br><span class="line">            std::<span class="built_in">min</span>(v<span class="number">1.</span>y, v<span class="number">2.</span>y),</span><br><span class="line">            std::<span class="built_in">min</span>(v<span class="number">1.</span>z, v<span class="number">2.</span>z)</span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">friend</span> vec3 <span class="title">max</span><span class="params">(vec3&lt;T&gt;&amp; v1, vec3&lt;T&gt;&amp; v2)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">vec3</span>(</span><br><span class="line">            std::<span class="built_in">max</span>(v<span class="number">1.</span>x, v<span class="number">2.</span>x),</span><br><span class="line">            std::<span class="built_in">max</span>(v<span class="number">1.</span>y, v<span class="number">2.</span>y),</span><br><span class="line">            std::<span class="built_in">max</span>(v<span class="number">1.</span>z, v<span class="number">2.</span>z)</span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="dot3类的实现"><a href="#dot3类的实现" class="headerlink" title="dot3类的实现"></a>dot3类的实现</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        T x, y, z; <span class="comment">// 3D coordinates (x,y,z)</span></span><br><span class="line"></span><br><span class="line">        </span><br><span class="line">    <span class="comment">// constructors</span></span><br><span class="line">    <span class="comment">/** @brief default constructor (0,0,0) */</span></span><br><span class="line">    <span class="built_in">dot3</span>() &#123;</span><br><span class="line">        <span class="keyword">this</span>-&gt;x = <span class="built_in">T</span>(<span class="number">0</span>);</span><br><span class="line">        <span class="keyword">this</span>-&gt;y = <span class="built_in">T</span>(<span class="number">0</span>);</span><br><span class="line">        <span class="keyword">this</span>-&gt;z = <span class="built_in">T</span>(<span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/** @brief parameterized constructor */</span></span><br><span class="line">    <span class="built_in">dot3</span>(T x_val, T y_val, T z_val) &#123;</span><br><span class="line">        <span class="keyword">this</span>-&gt;x = x_val;</span><br><span class="line">        <span class="keyword">this</span>-&gt;y = y_val;</span><br><span class="line">        <span class="keyword">this</span>-&gt;z = z_val;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/** @brief dot[0] = x, dot[1] = y, dot[2] = z */</span></span><br><span class="line">    T <span class="keyword">operator</span>[](<span class="type">int</span> i) <span class="type">const</span> &#123;</span><br><span class="line">        <span class="keyword">switch</span>(i) &#123;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">0</span>:  <span class="keyword">return</span> <span class="keyword">this</span>-&gt;x;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">1</span>:  <span class="keyword">return</span> <span class="keyword">this</span>-&gt;y;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">2</span>:  <span class="keyword">return</span> <span class="keyword">this</span>-&gt;z;</span><br><span class="line">            <span class="keyword">default</span>: <span class="keyword">return</span> <span class="built_in">T</span>(<span class="number">0</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">    * @brief form dot3 to vec3</span></span><br><span class="line"><span class="comment">    * </span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line">    <span class="function">vec3&lt;T&gt; <span class="title">to_vec3</span><span class="params">()</span> <span class="type">const</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">vec3</span>&lt;T&gt;(<span class="keyword">this</span>-&gt;x, <span class="keyword">this</span>-&gt;y, <span class="keyword">this</span>-&gt;z);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * @brief constructor between dot3f and dot3i, explicit to prevent implicit conversion</span></span><br><span class="line"><span class="comment">     * </span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T2&gt;</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">dot3</span><span class="params">(dot3&lt;T2&gt; &amp; d)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>-&gt;x = <span class="built_in">static_cast</span>&lt;T&gt;(d.x);</span><br><span class="line">        <span class="keyword">this</span>-&gt;y = <span class="built_in">static_cast</span>&lt;T&gt;(d.y);</span><br><span class="line">        <span class="keyword">this</span>-&gt;z = <span class="built_in">static_cast</span>&lt;T&gt;(d.z);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="运算符重载写在vec3-dot3类定义后-避免了部分运算符重载函数交叉依赖导致的错误"><a href="#运算符重载写在vec3-dot3类定义后-避免了部分运算符重载函数交叉依赖导致的错误" class="headerlink" title="运算符重载写在vec3 dot3类定义后,避免了部分运算符重载函数交叉依赖导致的错误"></a>运算符重载写在vec3 dot3类定义后,避免了部分运算符重载函数交叉依赖导致的错误</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">inline</span> dot3&lt;T&gt; <span class="keyword">operator</span>+(<span class="type">const</span> dot3&lt;T&gt;&amp; p, <span class="type">const</span> vec3&lt;T&gt;&amp; v) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">dot3</span>&lt;T&gt;(p.x + v.x, p.y + v.y, p.z + v.z);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">inline</span> dot3&lt;T&gt; <span class="keyword">operator</span>-(<span class="type">const</span> dot3&lt;T&gt;&amp; p, <span class="type">const</span> vec3&lt;T&gt;&amp; v) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">dot3</span>&lt;T&gt;(p.x - v.x, p.y - v.y, p.z - v.z);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">inline</span> vec3&lt;T&gt; <span class="keyword">operator</span>-(<span class="type">const</span> dot3&lt;T&gt;&amp; p, <span class="type">const</span> dot3&lt;T&gt;&amp; v) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">vec3</span>&lt;T&gt;(p.x - v.x, p.y - v.y, p.z - v.z);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// --- vec3 ---</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">inline</span> vec3&lt;T&gt; <span class="keyword">operator</span>+(<span class="type">const</span> vec3&lt;T&gt;&amp; v1, <span class="type">const</span> vec3&lt;T&gt;&amp; v2) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">vec3</span>&lt;T&gt;(v<span class="number">1.</span>x + v<span class="number">2.</span>x, v<span class="number">1.</span>y + v<span class="number">2.</span>y, v<span class="number">1.</span>z + v<span class="number">2.</span>z);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">inline</span> vec3&lt;T&gt; <span class="keyword">operator</span>-(<span class="type">const</span> vec3&lt;T&gt;&amp; v1, <span class="type">const</span> vec3&lt;T&gt;&amp; v2) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">vec3</span>&lt;T&gt;(v<span class="number">1.</span>x - v<span class="number">2.</span>x, v<span class="number">1.</span>y - v<span class="number">2.</span>y, v<span class="number">1.</span>z - v<span class="number">2.</span>z);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">inline</span> T <span class="keyword">operator</span>*(<span class="type">const</span> vec3&lt;T&gt;&amp; v1, <span class="type">const</span> vec3&lt;T&gt;&amp; v2) &#123; <span class="comment">// Dot Product</span></span><br><span class="line">    <span class="keyword">return</span> v<span class="number">1.</span>x * v<span class="number">2.</span>x + v<span class="number">1.</span>y * v<span class="number">2.</span>y + v<span class="number">1.</span>z * v<span class="number">2.</span>z;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">inline</span> vec3&lt;T&gt; <span class="keyword">operator</span>*(<span class="type">const</span> vec3&lt;T&gt;&amp; v, T scalar) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">vec3</span>&lt;T&gt;(v.x * scalar, v.y * scalar, v.z * scalar);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">inline</span> vec3&lt;T&gt; <span class="keyword">operator</span>*(T scalar, <span class="type">const</span> vec3&lt;T&gt;&amp; v) &#123; <span class="comment">// support scalar * vec</span></span><br><span class="line">    <span class="keyword">return</span> v * scalar;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">inline</span> vec3&lt;T&gt; <span class="keyword">operator</span>/(<span class="type">const</span> vec3&lt;T&gt;&amp; v, T scalar) &#123;</span><br><span class="line">    <span class="type">float</span> inv = <span class="number">1.0f</span> / scalar;</span><br><span class="line">    <span class="keyword">return</span> v * inv;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">inline</span> vec3&lt;T&gt; <span class="keyword">operator</span>-(<span class="type">const</span> vec3&lt;T&gt;&amp; v) &#123; <span class="comment">// Unary negation</span></span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">vec3</span>&lt;T&gt;(-v.x, -v.y, -v.z);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">inline</span> vec3&lt;T&gt;&amp; <span class="keyword">operator</span>+=(vec3&lt;T&gt;&amp; v1, <span class="type">const</span> vec3&lt;T&gt;&amp; v2) &#123;</span><br><span class="line">    v<span class="number">1.</span>x += v<span class="number">2.</span>x; v<span class="number">1.</span>y += v<span class="number">2.</span>y; v<span class="number">1.</span>z += v<span class="number">2.</span>z;</span><br><span class="line">    <span class="keyword">return</span> v1;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">inline</span> vec3&lt;T&gt;&amp; <span class="keyword">operator</span>-=(vec3&lt;T&gt;&amp; v1, <span class="type">const</span> vec3&lt;T&gt;&amp; v2) &#123;</span><br><span class="line">    v<span class="number">1.</span>x -= v<span class="number">2.</span>x; v<span class="number">1.</span>y -= v<span class="number">2.</span>y; v<span class="number">1.</span>z -= v<span class="number">2.</span>z;</span><br><span class="line">    <span class="keyword">return</span> v1;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">inline</span> vec3&lt;T&gt;&amp; <span class="keyword">operator</span>*=(vec3&lt;T&gt;&amp; v, T scalar) &#123;</span><br><span class="line">    v.x *= scalar; v.y *= scalar; v.z *= scalar;</span><br><span class="line">    <span class="keyword">return</span> v;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">inline</span> vec3&lt;T&gt;&amp; <span class="keyword">operator</span>/=(vec3&lt;T&gt;&amp; v, T scalar) &#123;</span><br><span class="line">    <span class="type">float</span> inv = <span class="number">1.0f</span> / scalar;</span><br><span class="line">    v.x *= inv; v.y *= inv; v.z *= inv;</span><br><span class="line">    <span class="keyword">return</span> v;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">inline</span> <span class="type">bool</span> <span class="keyword">operator</span>==(<span class="type">const</span> vec3&lt;T&gt;&amp; v1, <span class="type">const</span> vec3&lt;T&gt;&amp; v2) &#123;</span><br><span class="line">    <span class="keyword">return</span> v<span class="number">1.</span>x == v<span class="number">2.</span>x &amp;&amp; v<span class="number">1.</span>y == v<span class="number">2.</span>y &amp;&amp; v<span class="number">1.</span>z == v<span class="number">2.</span>z;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">inline</span> vec3&lt;T&gt; <span class="keyword">operator</span>^(<span class="type">const</span> vec3&lt;T&gt;&amp; v1, <span class="type">const</span> vec3&lt;T&gt;&amp; v2) &#123; <span class="comment">// Cross Product</span></span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">vec3</span>&lt;T&gt;(</span><br><span class="line">        v<span class="number">1.</span>y * v<span class="number">2.</span>z - v<span class="number">1.</span>z * v<span class="number">2.</span>y,</span><br><span class="line">        v<span class="number">1.</span>z * v<span class="number">2.</span>x - v<span class="number">1.</span>x * v<span class="number">2.</span>z,</span><br><span class="line">        v<span class="number">1.</span>x * v<span class="number">2.</span>y - v<span class="number">1.</span>y * v<span class="number">2.</span>x</span><br><span class="line">    );</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="常用类型的声明"><a href="#常用类型的声明" class="headerlink" title="常用类型的声明"></a>常用类型的声明</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">using</span> dot3f = dot3&lt;<span class="type">float</span>&gt;;</span><br><span class="line"><span class="keyword">using</span> dot3i = dot3&lt;<span class="type">int</span>&gt;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> vec3f = vec3&lt;<span class="type">float</span>&gt;;</span><br><span class="line"><span class="keyword">using</span> vec3i = vec3&lt;<span class="type">int</span>&gt;;</span><br></pre></td></tr></table></figure>
+
+<h2 id="射线的定义，参考pbrt"><a href="#射线的定义，参考pbrt" class="headerlink" title="射线的定义，参考pbrt"></a>射线的定义，参考pbrt</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// MARK: ray definitions</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ray</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        dot3f origin; <span class="comment">// ray origin</span></span><br><span class="line">        vec3f direction; <span class="comment">// ray direction</span></span><br><span class="line">    <span class="keyword">mutable</span> <span class="type">float</span> t_max; <span class="comment">// maximum ray extent</span></span><br><span class="line">    <span class="keyword">mutable</span> <span class="type">float</span> time; <span class="comment">// ray time</span></span><br><span class="line">    <span class="type">const</span> <span class="type">void</span>* medium; <span class="comment">// ray medium</span></span><br><span class="line">    <span class="comment">// constructors</span></span><br><span class="line">    <span class="comment">/** @brief default constructor (origin at (0,0,0) and direction (0,0,1)) */</span></span><br><span class="line">    <span class="built_in">ray</span>() : <span class="built_in">origin</span>(<span class="built_in">dot3f</span>(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>)), <span class="built_in">direction</span>(<span class="built_in">vec3f</span>(<span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)), <span class="built_in">t_max</span>(std::numeric_limits&lt;<span class="type">float</span>&gt;::<span class="built_in">infinity</span>()), <span class="built_in">time</span>(<span class="number">0.0f</span>), <span class="built_in">medium</span>(<span class="literal">nullptr</span>) &#123;&#125;</span><br><span class="line">    <span class="comment">/** @brief parameterized constructor */</span></span><br><span class="line">    <span class="built_in">ray</span>(dot3f origin_val, vec3f direction_val) : <span class="built_in">origin</span>(origin_val), <span class="built_in">direction</span>(direction_val), <span class="built_in">t_max</span>(std::numeric_limits&lt;<span class="type">float</span>&gt;::<span class="built_in">infinity</span>()), <span class="built_in">time</span>(<span class="number">0.0f</span>), <span class="built_in">medium</span>(<span class="literal">nullptr</span>) &#123;&#125;</span><br><span class="line">    </span><br><span class="line"></span><br><span class="line">    <span class="function">dot3f <span class="title">operator</span><span class="params">()</span><span class="params">(<span class="type">float</span> t)</span> <span class="type">const</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> origin + direction * t;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h2 id="ball定义"><a href="#ball定义" class="headerlink" title="ball定义"></a>ball定义</h2><h3 id="基本对象定义完成，接下来定义一个球"><a href="#基本对象定义完成，接下来定义一个球" class="headerlink" title="基本对象定义完成，接下来定义一个球"></a>基本对象定义完成，接下来定义一个球</h3><h3 id="由于后续需要用到ray与球求交点，在内部提前定义好对于方法方便调用"><a href="#由于后续需要用到ray与球求交点，在内部提前定义好对于方法方便调用" class="headerlink" title="由于后续需要用到ray与球求交点，在内部提前定义好对于方法方便调用"></a>由于后续需要用到ray与球求交点，在内部提前定义好对于方法方便调用</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">ball</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    dot3f center;</span><br><span class="line">    <span class="type">float</span> radius;</span><br><span class="line"></span><br><span class="line">    vec3i color;</span><br><span class="line">    <span class="built_in">ball</span>(dot3f center, <span class="type">float</span> radius, vec3i color = <span class="built_in">vec3i</span>(<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>)) : <span class="built_in">center</span>(center), <span class="built_in">radius</span>(radius), <span class="built_in">color</span>(color) &#123;&#125; ;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">float</span> <span class="title">hit</span><span class="params">(dot3f ray_origin, vec3f ray_direction)</span> </span>&#123;</span><br><span class="line">        vec3f center_to_origin = ray_origin - center;</span><br><span class="line">        <span class="type">float</span> a = ray_direction * ray_direction;</span><br><span class="line">        <span class="type">float</span> b = <span class="number">2.0f</span> * (center_to_origin * ray_direction);</span><br><span class="line">        <span class="type">float</span> c = center_to_origin * center_to_origin - radius * radius;</span><br><span class="line">        <span class="type">float</span> delta = b * b - <span class="number">4</span> * a * c;</span><br><span class="line">        <span class="keyword">if</span> (delta &lt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">-1.0f</span>; <span class="comment">// No intersection</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">float</span> sqrt_delta = std::<span class="built_in">sqrt</span>(delta);</span><br><span class="line">        <span class="type">float</span> t1 = (-b - sqrt_delta) / (<span class="number">2</span> * a);</span><br><span class="line">        <span class="type">float</span> t2 = (-b + sqrt_delta) / (<span class="number">2</span> * a);</span><br><span class="line">        <span class="keyword">return</span> t1 &gt; <span class="number">0</span> ? t1 : t2; <span class="comment">// Return the closest positive intersection</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">// BALL_H</span></span></span><br></pre></td></tr></table></figure>
+
+<h1 id="主函数"><a href="#主函数" class="headerlink" title="主函数"></a>主函数</h1><h3 id="接下来是主函数的编写，此时需要规定使用何种坐标系"><a href="#接下来是主函数的编写，此时需要规定使用何种坐标系" class="headerlink" title="接下来是主函数的编写，此时需要规定使用何种坐标系"></a>接下来是主函数的编写，此时需要规定使用何种坐标系</h3><h3 id="我们采用右手坐标系（即z轴指向我们）"><a href="#我们采用右手坐标系（即z轴指向我们）" class="headerlink" title="我们采用右手坐标系（即z轴指向我们）"></a>我们采用右手坐标系（即z轴指向我们）</h3><h3 id="使用stb-image-write-h-来输出png"><a href="#使用stb-image-write-h-来输出png" class="headerlink" title="使用stb_image_write.h 来输出png"></a>使用<code>stb_image_write.h</code> 来输出png</h3><h3 id="定义常量"><a href="#定义常量" class="headerlink" title="定义常量"></a>定义常量</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> IMAGE_SIZE 1000 <span class="comment">// sceen size by pixels</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> screen_size 5.0f <span class="comment">// screen size in world </span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> env_light 0.15f <span class="comment">// ambient</span></span></span><br></pre></td></tr></table></figure>
+<h4 id="默认情况会使用stack来放我们的数据，但在图片情况下这是不够的，改用vector堆来承载。"><a href="#默认情况会使用stack来放我们的数据，但在图片情况下这是不够的，改用vector堆来承载。" class="headerlink" title="默认情况会使用stack来放我们的数据，但在图片情况下这是不够的，改用vector堆来承载。"></a>默认情况会使用stack来放我们的数据，但在图片情况下这是不够的，改用vector堆来承载。</h4><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// vec3f views[IMAGE_SIZE][IMAGE_SIZE]; // it cant bigger than 1MB? by stack</span></span><br><span class="line">std::vector&lt;std::vector&lt;vec3f&gt;&gt; <span class="built_in">views</span>(IMAGE_SIZE, </span><br><span class="line">                                            std::<span class="built_in">vector</span>&lt;vec3f&gt;(IMAGE_SIZE));</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="小孔相机模型，视点，画布，-物体"><a href="#小孔相机模型，视点，画布，-物体" class="headerlink" title="小孔相机模型，视点，画布， 物体"></a>小孔相机模型，视点，画布， 物体</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">    <span class="comment">// base definitions</span></span><br><span class="line">    <span class="function">dot3f <span class="title">eye</span><span class="params">(<span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)</span></span>;    </span><br><span class="line">    <span class="function">ball <span class="title">firball</span><span class="params">(dot3f(<span class="number">0</span>, <span class="number">0</span>, <span class="number">-7</span>), <span class="number">5.0f</span>)</span></span>;</span><br></pre></td></tr></table></figure>
+<h3 id="直射光"><a href="#直射光" class="headerlink" title="直射光"></a>直射光</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">    <span class="function">vec3f <span class="title">light_dir</span><span class="params">(<span class="number">1</span>, <span class="number">1</span>, <span class="number">-1</span>)</span></span>;</span><br><span class="line">    light_dir = light_dir.<span class="built_in">normalize</span>();</span><br></pre></td></tr></table></figure>
+
+<h3 id="对每一个像素进行检测，使用了简单的rasterization步骤"><a href="#对每一个像素进行检测，使用了简单的rasterization步骤" class="headerlink" title="对每一个像素进行检测，使用了简单的rasterization步骤"></a>对每一个像素进行检测，使用了简单的rasterization步骤</h3><p><code>dot3f(i*screen_size/(IMAGE_SIZE) - screen_size/2.0f, j*screen_size/(IMAGE_SIZE) - screen_size/2.0f, 0.0f)</code></p>
+<h4 id="球的法向使用交点与球心的向量即可。"><a href="#球的法向使用交点与球心的向量即可。" class="headerlink" title="球的法向使用交点与球心的向量即可。"></a>球的法向使用交点与球心的向量即可。</h4><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; IMAGE_SIZE; i++) &#123;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> j = <span class="number">0</span>; j &lt; IMAGE_SIZE; j++) &#123;</span><br><span class="line">            dot3f ray_origin = eye;</span><br><span class="line">            vec3f ray_direction = (<span class="built_in">dot3f</span>(i*screen_size/(IMAGE_SIZE) - screen_size/<span class="number">2.0f</span>, j*screen_size/(IMAGE_SIZE) - screen_size/<span class="number">2.0f</span>, <span class="number">0.0f</span>) - eye).<span class="built_in">normalize</span>();</span><br><span class="line">            <span class="type">float</span> t = firball.<span class="built_in">hit</span>(ray_origin, ray_direction);</span><br><span class="line">            <span class="keyword">if</span> (t &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                dot3f hit_point = ray_origin + t * ray_direction;</span><br><span class="line">                vec3f firball_normal = (hit_point - firball.center).<span class="built_in">normalize</span>();</span><br><span class="line">                <span class="comment">// -light_dir</span></span><br><span class="line"></span><br><span class="line">                <span class="comment">/**</span></span><br><span class="line"><span class="comment">                 * @brief  half-lambert shading, the diffuse term is (N dot L + 1) / 2</span></span><br><span class="line"><span class="comment">                 * </span></span><br><span class="line"><span class="comment">                 */</span></span><br><span class="line">                <span class="type">float</span> diffuse = std::<span class="built_in">max</span>(<span class="number">0.0f</span>, firball_normal * (-light_dir) + env_light);</span><br><span class="line">                <span class="comment">// float diffuse = std::max(0.0f, firball_normal * (-light_dir)/2.0f + 0.5f + env_light); // simple diffuse shading</span></span><br><span class="line">                views[i][j] = <span class="built_in">vec3f</span>(<span class="number">255</span> * diffuse, <span class="number">255</span> * diffuse, <span class="number">255</span> * diffuse);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                views[i][j] = <span class="built_in">vec3f</span>(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<h3 id="将数据装入png希望的数据容器"><a href="#将数据装入png希望的数据容器" class="headerlink" title="将数据装入png希望的数据容器"></a>将数据装入png希望的数据容器</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">    <span class="comment">// png rendering</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span>* pixels = <span class="keyword">new</span> <span class="type">unsigned</span> <span class="type">char</span>[IMAGE_SIZE * IMAGE_SIZE * <span class="number">3</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> j = <span class="number">0</span>; j &lt; IMAGE_SIZE; j++) &#123;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; IMAGE_SIZE; i++) &#123;</span><br><span class="line">            <span class="type">int</span> pixel_index = (j * IMAGE_SIZE + i) * <span class="number">3</span>;</span><br><span class="line">            </span><br><span class="line">            <span class="comment">// 0-255</span></span><br><span class="line">            pixels[pixel_index + <span class="number">0</span>] = (<span class="type">unsigned</span> <span class="type">char</span>)std::<span class="built_in">min</span>(<span class="number">255.0f</span>, std::<span class="built_in">max</span>(<span class="number">0.0f</span>, views[i][j].x));</span><br><span class="line">            pixels[pixel_index + <span class="number">1</span>] = (<span class="type">unsigned</span> <span class="type">char</span>)std::<span class="built_in">min</span>(<span class="number">255.0f</span>, std::<span class="built_in">max</span>(<span class="number">0.0f</span>, views[i][j].y));</span><br><span class="line">            pixels[pixel_index + <span class="number">2</span>] = (<span class="type">unsigned</span> <span class="type">char</span>)std::<span class="built_in">min</span>(<span class="number">255.0f</span>, std::<span class="built_in">max</span>(<span class="number">0.0f</span>, views[i][j].z));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<h3 id="最后调用库进行输出"><a href="#最后调用库进行输出" class="headerlink" title="最后调用库进行输出"></a>最后调用库进行输出</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">    <span class="built_in">stbi_write_png</span>(<span class="string">&quot;output.png&quot;</span>, IMAGE_SIZE, IMAGE_SIZE, <span class="number">3</span>, pixels, IMAGE_SIZE * <span class="number">3</span>))</span><br></pre></td></tr></table></figure>
+</article>
+<div class="article-footer">
+    <section id="license">
+      <div class="header"><span>License</span></div>
+      <div class="body"><p>本文采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">署名-非商业性使用-相同方式共享 4.0 国际</a> 许可协议，转载请注明出处。</p>
+</div>
+    </section>
+    
+
+</div>
+
+<div class="related-wrap" id="read-next"><section class="body"><div class="item" id="prev"><div class="note">Newer</div><a href="/2026/05/14/hello-world/">Hello World</a></div><div class="item" id="next"></div></section></div>
+
+
+
+
+
+
+<footer class="page-footer footnote"><hr><div class="text"><p>本博客所有文章除特别声明外，均采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议，转载请注明出处。</p>
+</div></footer>
+<div class="main-mask" onclick="sidebar.dismiss()"></div></div><aside class="l_right">
+<div class="widgets">
+
+
+
+<widget class="widget-wrapper toc" id="data-toc" collapse="false"><div class="widget-header dis-select"><span class="name">On This Page</span><a class="cap-action" onclick="sidebar.toggleTOC()" ><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></a></div><div class="widget-body"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%9E%81%E5%B0%8F%E7%A6%BB%E7%BA%BF%E6%B8%B2%E6%9F%93%E5%AE%9E%E7%8E%B0"><span class="toc-text">极小离线渲染实现</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9F%BA%E6%9C%AC%E5%AF%B9%E8%B1%A1%E5%AE%9A%E4%B9%89"><span class="toc-text">基本对象定义</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#vec3-%E4%B8%8E-dot3-%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="toc-text">vec3 与 dot3 的实现</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#vec3"><span class="toc-text">vec3</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#dot3%E7%B1%BB%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="toc-text">dot3类的实现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%90%E7%AE%97%E7%AC%A6%E9%87%8D%E8%BD%BD%E5%86%99%E5%9C%A8vec3-dot3%E7%B1%BB%E5%AE%9A%E4%B9%89%E5%90%8E-%E9%81%BF%E5%85%8D%E4%BA%86%E9%83%A8%E5%88%86%E8%BF%90%E7%AE%97%E7%AC%A6%E9%87%8D%E8%BD%BD%E5%87%BD%E6%95%B0%E4%BA%A4%E5%8F%89%E4%BE%9D%E8%B5%96%E5%AF%BC%E8%87%B4%E7%9A%84%E9%94%99%E8%AF%AF"><span class="toc-text">运算符重载写在vec3 dot3类定义后,避免了部分运算符重载函数交叉依赖导致的错误</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B8%B8%E7%94%A8%E7%B1%BB%E5%9E%8B%E7%9A%84%E5%A3%B0%E6%98%8E"><span class="toc-text">常用类型的声明</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%84%E7%BA%BF%E7%9A%84%E5%AE%9A%E4%B9%89%EF%BC%8C%E5%8F%82%E8%80%83pbrt"><span class="toc-text">射线的定义，参考pbrt</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ball%E5%AE%9A%E4%B9%89"><span class="toc-text">ball定义</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9F%BA%E6%9C%AC%E5%AF%B9%E8%B1%A1%E5%AE%9A%E4%B9%89%E5%AE%8C%E6%88%90%EF%BC%8C%E6%8E%A5%E4%B8%8B%E6%9D%A5%E5%AE%9A%E4%B9%89%E4%B8%80%E4%B8%AA%E7%90%83"><span class="toc-text">基本对象定义完成，接下来定义一个球</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%94%B1%E4%BA%8E%E5%90%8E%E7%BB%AD%E9%9C%80%E8%A6%81%E7%94%A8%E5%88%B0ray%E4%B8%8E%E7%90%83%E6%B1%82%E4%BA%A4%E7%82%B9%EF%BC%8C%E5%9C%A8%E5%86%85%E9%83%A8%E6%8F%90%E5%89%8D%E5%AE%9A%E4%B9%89%E5%A5%BD%E5%AF%B9%E4%BA%8E%E6%96%B9%E6%B3%95%E6%96%B9%E4%BE%BF%E8%B0%83%E7%94%A8"><span class="toc-text">由于后续需要用到ray与球求交点，在内部提前定义好对于方法方便调用</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%BB%E5%87%BD%E6%95%B0"><span class="toc-text">主函数</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8E%A5%E4%B8%8B%E6%9D%A5%E6%98%AF%E4%B8%BB%E5%87%BD%E6%95%B0%E7%9A%84%E7%BC%96%E5%86%99%EF%BC%8C%E6%AD%A4%E6%97%B6%E9%9C%80%E8%A6%81%E8%A7%84%E5%AE%9A%E4%BD%BF%E7%94%A8%E4%BD%95%E7%A7%8D%E5%9D%90%E6%A0%87%E7%B3%BB"><span class="toc-text">接下来是主函数的编写，此时需要规定使用何种坐标系</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%88%91%E4%BB%AC%E9%87%87%E7%94%A8%E5%8F%B3%E6%89%8B%E5%9D%90%E6%A0%87%E7%B3%BB%EF%BC%88%E5%8D%B3z%E8%BD%B4%E6%8C%87%E5%90%91%E6%88%91%E4%BB%AC%EF%BC%89"><span class="toc-text">我们采用右手坐标系（即z轴指向我们）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8stb-image-write-h-%E6%9D%A5%E8%BE%93%E5%87%BApng"><span class="toc-text">使用stb_image_write.h 来输出png</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9A%E4%B9%89%E5%B8%B8%E9%87%8F"><span class="toc-text">定义常量</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%BB%98%E8%AE%A4%E6%83%85%E5%86%B5%E4%BC%9A%E4%BD%BF%E7%94%A8stack%E6%9D%A5%E6%94%BE%E6%88%91%E4%BB%AC%E7%9A%84%E6%95%B0%E6%8D%AE%EF%BC%8C%E4%BD%86%E5%9C%A8%E5%9B%BE%E7%89%87%E6%83%85%E5%86%B5%E4%B8%8B%E8%BF%99%E6%98%AF%E4%B8%8D%E5%A4%9F%E7%9A%84%EF%BC%8C%E6%94%B9%E7%94%A8vector%E5%A0%86%E6%9D%A5%E6%89%BF%E8%BD%BD%E3%80%82"><span class="toc-text">默认情况会使用stack来放我们的数据，但在图片情况下这是不够的，改用vector堆来承载。</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B0%8F%E5%AD%94%E7%9B%B8%E6%9C%BA%E6%A8%A1%E5%9E%8B%EF%BC%8C%E8%A7%86%E7%82%B9%EF%BC%8C%E7%94%BB%E5%B8%83%EF%BC%8C-%E7%89%A9%E4%BD%93"><span class="toc-text">小孔相机模型，视点，画布， 物体</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%9B%B4%E5%B0%84%E5%85%89"><span class="toc-text">直射光</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AF%B9%E6%AF%8F%E4%B8%80%E4%B8%AA%E5%83%8F%E7%B4%A0%E8%BF%9B%E8%A1%8C%E6%A3%80%E6%B5%8B%EF%BC%8C%E4%BD%BF%E7%94%A8%E4%BA%86%E7%AE%80%E5%8D%95%E7%9A%84rasterization%E6%AD%A5%E9%AA%A4"><span class="toc-text">对每一个像素进行检测，使用了简单的rasterization步骤</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%90%83%E7%9A%84%E6%B3%95%E5%90%91%E4%BD%BF%E7%94%A8%E4%BA%A4%E7%82%B9%E4%B8%8E%E7%90%83%E5%BF%83%E7%9A%84%E5%90%91%E9%87%8F%E5%8D%B3%E5%8F%AF%E3%80%82"><span class="toc-text">球的法向使用交点与球心的向量即可。</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B0%86%E6%95%B0%E6%8D%AE%E8%A3%85%E5%85%A5png%E5%B8%8C%E6%9C%9B%E7%9A%84%E6%95%B0%E6%8D%AE%E5%AE%B9%E5%99%A8"><span class="toc-text">将数据装入png希望的数据容器</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9C%80%E5%90%8E%E8%B0%83%E7%94%A8%E5%BA%93%E8%BF%9B%E8%A1%8C%E8%BE%93%E5%87%BA"><span class="toc-text">最后调用库进行输出</span></a></li></ol></li></ol></div><div class="widget-footer"><a class="top" onclick="util.scrollTop()"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"><path stroke-linejoin="round" d="m9 15.5l3-3l3 3m-6-4l3-3l3 3"/><path d="M7 3.338A9.95 9.95 0 0 1 12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12c0-1.821.487-3.53 1.338-5"/></g></svg><span>Scroll to Top</span></a></div></widget>
+</div></aside><div class='float-panel'>
+  <button type='button' style='display:none' class='laptop-only rightbar-toggle mobile' onclick='sidebar.rightbar()'>
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+  </button>
+  <button type='button' style='display:none' class='mobile-only leftbar-toggle mobile' onclick='sidebar.leftbar()'>
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11c0-3.771 0-5.657 1.172-6.828C4.343 3 6.229 3 10 3h4c3.771 0 5.657 0 6.828 1.172C22 5.343 22 7.229 22 11v2c0 3.771 0 5.657-1.172 6.828C19.657 21 17.771 21 14 21h-4c-3.771 0-5.657 0-6.828-1.172C2 18.657 2 16.771 2 13z"/><path id="sep" stroke-linecap="round" d="M5.5 10h6m-5 4h4m4.5 7V3"/></g></svg>
+  </button>
+</div>
+</div><div class="scripts">
+
+
+<script type="text/javascript">
+  window.canonical = {"originalHost":null,"officialHosts":["localhost"],"encoded":""};
+  const ctx = {
+    date_suffix: {
+      just: `Just`,
+      min: `minutes ago`,
+      hour: `hours ago`,
+      day: `days ago`,
+    },
+    root : `/`,
+    tag_plugins: {
+      chat: Object.assign({"api":"https://siteinfo.listentothewind.cn/api/v1"}),
+    }
+  };
+
+  // required plugins (only load if needs)
+  if (`local_search`) {
+    ctx.search = {};
+    ctx.search.service = `local_search`;
+    if (ctx.search.service == 'local_search') {
+      let service_obj = Object.assign({}, `{"field":"all","path":"/search.json","content":true,"skip_search":null,"sort":"-date"}`);
+      ctx.search[ctx.search.service] = service_obj;
+    }
+  }
+  const def = {
+    avatar: `https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg`,
+    cover: `https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/cover/76b86c0226ffd.svg`,
+    loading: `https://api.iconify.design/eos-icons:three-dots-loading.svg?color=%231cd0fd`,
+  };
+  const deps = {
+    jquery: `https://gcore.jsdelivr.net/npm/jquery@3.7/dist/jquery.min.js`,
+    marked: `https://gcore.jsdelivr.net/npm/marked@13.0/lib/marked.umd.min.js`,
+    lazyload: `/%5Bobject%20Object%5D`
+  }
+  
+
+</script>
+
+<script type="text/javascript">
+  
+  function RunItem() {
+    this.list = []; // 存放回调函数
+    this.start = () => {
+      for (var i = 0; i < this.list.length; i++) {
+        this.list[i].run();
+      }
+    };
+    this.push = (fn, name, setRequestAnimationFrame = true) => {
+      let myfn = fn
+      if (setRequestAnimationFrame) {
+        myfn = () => {
+          utils.requestAnimationFrame(fn)
+        }
+      }
+      var f = new Item(myfn, name);
+      this.list.push(f);
+    };
+    this.remove = (name) => {
+      for (let index = 0; index < this.list.length; index++) {
+        const e = this.list[index];
+        if (e.name == name) {
+          this.list.splice(index, 1);
+        }
+      }
+    }
+    // 构造一个可以run的对象
+    function Item(fn, name) {
+      // 函数名称
+      this.name = name || fn.name;
+      // run方法
+      this.run = () => {
+        try {
+          fn()
+        } catch (error) {
+          console.log(error);
+        }
+      };
+    }
+  }
+
+  const utils = {
+    // 懒加载 css https://github.com/filamentgroup/loadCSS
+    css: (href, before, media, attributes) => {
+      var doc = window.document;
+      var ss = doc.createElement("link");
+      var ref;
+      if (before) {
+        ref = before;
+      } else {
+        var refs = (doc.body || doc.getElementsByTagName("head")[0]).childNodes;
+        ref = refs[refs.length - 1];
+      }
+      var sheets = doc.styleSheets;
+      if (attributes) {
+        for (var attributeName in attributes) {
+          if (attributes.hasOwnProperty(attributeName)) {
+            ss.setAttribute(attributeName, attributes[attributeName]);
+          }
+        }
+      }
+      ss.rel = "stylesheet";
+      ss.href = href;
+      ss.media = "only x";
+      function ready(cb) {
+        if (doc.body) {
+          return cb();
+        }
+        setTimeout(function () {
+          ready(cb);
+        });
+      }
+      ready(function () {
+        ref.parentNode.insertBefore(ss, before ? ref : ref.nextSibling);
+      });
+      var onloadcssdefined = function (cb) {
+        var resolvedHref = ss.href;
+        var i = sheets.length;
+        while (i--) {
+          if (sheets[i].href === resolvedHref) {
+            return cb();
+          }
+        }
+        setTimeout(function () {
+          onloadcssdefined(cb);
+        });
+      };
+      function loadCB() {
+        if (ss.addEventListener) {
+          ss.removeEventListener("load", loadCB);
+        }
+        ss.media = media || "all";
+      }
+      if (ss.addEventListener) {
+        ss.addEventListener("load", loadCB);
+      }
+      ss.onloadcssdefined = onloadcssdefined;
+      onloadcssdefined(loadCB);
+      return ss;
+    },
+
+    js: (src, opt) => new Promise((resolve, reject) => {
+      var script = document.createElement('script');
+      if (src.startsWith('/')) {
+        src = ctx.root + src.substring(1);
+      }
+      script.src = src;
+      if (opt) {
+        for (let key of Object.keys(opt)) {
+          script[key] = opt[key]
+        }
+      } else {
+        // 默认异步，如果需要同步，第二个参数传入 {} 即可
+        script.async = true
+      }
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function () {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    }),
+
+    jq: (fn) => {
+      if (typeof jQuery === 'undefined') {
+        utils.js(deps.jquery).then(fn)
+      } else {
+        fn()
+      }
+    },
+
+    onLoading: (el) => {
+      if (el) {
+        $(el).append('<div class="loading-wrap"><svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><path stroke-dasharray="60" stroke-dashoffset="60" stroke-opacity=".3" d="M12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="1.3s" values="60;0"/></path><path stroke-dasharray="15" stroke-dashoffset="15" d="M12 3C16.9706 3 21 7.02944 21 12"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.3s" values="15;0"/><animateTransform attributeName="transform" dur="1.5s" repeatCount="indefinite" type="rotate" values="0 12 12;360 12 12"/></path></g></svg></div>');
+      }
+    },
+    onLoadSuccess: (el) => {
+      if (el) {
+        $(el).find('.loading-wrap').remove();
+      }
+    },
+    onLoadFailure: (el) => {
+      if (el) {
+        $(el).find('.loading-wrap svg').remove();
+        $(el).find('.loading-wrap').append('<svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="60" stroke-dashoffset="60" d="M12 3L21 20H3L12 3Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.5s" values="60;0"/></path><path stroke-dasharray="6" stroke-dashoffset="6" d="M12 10V14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.6s" dur="0.2s" values="6;0"/></path></g><circle cx="12" cy="17" r="1" fill="currentColor" fill-opacity="0"><animate fill="freeze" attributeName="fill-opacity" begin="0.8s" dur="0.4s" values="0;1"/></circle></svg>');
+        $(el).find('.loading-wrap').addClass('error');
+      }
+    },
+    request: (el, url, callback, onFailure) => {
+      const maxRetry = 3;
+      let retryCount = 0;
+
+      return new Promise((resolve, reject) => {
+        const load = () => {
+          utils.onLoading?.(el);
+
+          let timedOut = false;
+          const timeout = setTimeout(() => {
+            timedOut = true;
+            console.warn('[request] 超时:', url);
+
+            if (++retryCount >= maxRetry) {
+              utils.onLoadFailure?.(el);
+              onFailure?.();
+              reject('请求超时');
+            } else {
+              setTimeout(load, 1000);
+            }
+          }, 5000);
+
+          fetch(url).then(resp => {
+            if (timedOut) return;
+            clearTimeout(timeout);
+
+            if (!resp.ok) throw new Error('响应失败');
+            return resp;
+          }).then(data => {
+            if (timedOut) return;
+            utils.onLoadSuccess?.(el);
+            callback(data);
+            resolve(data);
+          }).catch(err => {
+            clearTimeout(timeout);
+            console.warn('[request] 错误:', err);
+
+            if (++retryCount >= maxRetry) {
+              utils.onLoadFailure?.(el);
+              onFailure?.();
+              reject(err);
+            } else {
+              setTimeout(load, 1000);
+            }
+          });
+        };
+
+        load();
+      });
+    },
+    requestWithoutLoading: (url, options = {}, maxRetry = 2, timeout = 5000) => {
+      return new Promise((resolve, reject) => {
+        let retryCount = 0;
+
+        const tryRequest = () => {
+          let timedOut = false;
+          const timer = setTimeout(() => {
+            timedOut = true;
+            if (++retryCount > maxRetry) reject('timeout');
+            else tryRequest();
+          }, timeout);
+
+          fetch(url, options)
+            .then(resp => {
+              clearTimeout(timer);
+              if (!resp.ok) throw new Error('bad response');
+              resolve(resp);
+            })
+            .catch(err => {
+              clearTimeout(timer);
+              if (++retryCount > maxRetry) reject(err);
+              else setTimeout(tryRequest, 500);
+            });
+        };
+
+        tryRequest();
+      });
+    },
+    /********************** requestAnimationFrame ********************************/
+    // 1、requestAnimationFrame 会把每一帧中的所有 DOM 操作集中起来，在一次重绘或回流中就完成，并且重绘或回流的时间间隔紧紧跟随浏览器的刷新频率，一般来说，这个频率为每秒60帧。
+    // 2、在隐藏或不可见的元素中，requestAnimationFrame 将不会进行重绘或回流，这当然就意味着更少的的 cpu，gpu 和内存使用量。
+    requestAnimationFrame: (fn) => {
+      if (!window.requestAnimationFrame) {
+        window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame;
+      }
+      window.requestAnimationFrame(fn)
+    },
+    dark: {},
+  };
+
+  // utils.dark.mode 当前模式 dark or light
+  // utils.dark.toggle() 暗黑模式触发器
+  // utils.dark.push(callBack[,"callBackName"]) 传入触发器回调函数
+  utils.dark.method = {
+    toggle: new RunItem(),
+  };
+  utils.dark = Object.assign(utils.dark, {
+    push: utils.dark.method.toggle.push,
+  });
+</script>
+<script>
+  const sidebar = {
+    leftbar: () => {
+      if (l_body) {
+        l_body.toggleAttribute('leftbar');
+        l_body.removeAttribute('rightbar');
+      }
+    },
+    rightbar: () => {
+      if (l_body) {
+        l_body.toggleAttribute('rightbar');
+        l_body.removeAttribute('leftbar');
+      }
+    },
+    dismiss: () => {
+      if (l_body) {
+        l_body.removeAttribute('leftbar');
+        l_body.removeAttribute('rightbar');
+      }
+    },
+    toggleTOC: () => {
+      document.querySelector('#data-toc').classList.toggle('collapse');
+    }
+  }
+</script>
+<script type="text/javascript">
+  (() => {
+    const tagSwitchers = document.querySelectorAll('.tag-subtree.parent-tag > a > .tag-switcher-wrapper')
+    for (const tagSwitcher of tagSwitchers) {
+      tagSwitcher.addEventListener('click', (e) => {
+        const parent = e.target.closest('.tag-subtree.parent-tag')
+        parent.classList.toggle('expanded')
+        e.preventDefault()
+      })
+    }
+
+    // Get active tag from query string, then activate it.
+    const urlParams = new URLSearchParams(window.location.search)
+    const activeTag = urlParams.get('tag')
+    if (activeTag) {
+      let tag = document.querySelector(`.tag-subtree[data-tag="${activeTag}"]`)
+      if (tag) {
+        tag.querySelector('a').classList.add('active')
+        
+        while (tag) {
+          tag.classList.add('expanded')
+          tag = tag.parentElement.closest('.tag-subtree.parent-tag')
+        }
+      }
+    }
+  })()
+</script>
+
+<script async src="https://gcore.jsdelivr.net/npm/vanilla-lazyload@19.1/dist/lazyload.min.js"></script>
+<script>
+  // https://www.npmjs.com/package/vanilla-lazyload
+  // Set the options globally
+  // to make LazyLoad self-initialize
+  window.lazyLoadOptions = {
+    elements_selector: ".lazy",
+    callback_loaded: (el) => {
+      el.classList.add('loaded');
+      const wrapper = el.closest('.lazy-box');
+      const icon = wrapper?.querySelector('.lazy-icon');
+      if (icon) icon.remove();
+    }
+  };
+  // Listen to the initialization event
+  // and get the instance of LazyLoad
+  window.addEventListener(
+    "LazyLoad::Initialized",
+    function (event) {
+      window.lazyLoadInstance = event.detail.instance;
+    },
+    false
+  );
+  document.addEventListener('DOMContentLoaded', function () {
+    window.lazyLoadInstance?.update();
+  });
+
+  window.wrapLazyloadImages = (container) => {
+    if (typeof container === 'string') {
+      container = document.querySelector(container);
+    }
+    if (!container) return;
+    
+    const images = container.querySelectorAll('img');
+    images.forEach((img) => {
+      if (img.classList.contains('lazy')) return;
+
+      const src = img.getAttribute('src');
+      if (!src) return;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'lazy-box';
+
+      const newImg = img.cloneNode();
+      newImg.removeAttribute('src');
+      newImg.setAttribute('data-src', src);
+      newImg.classList.add('lazy');
+
+      const icon = document.createElement('div');
+      icon.className = 'lazy-icon';
+      if (def.loading) {
+        icon.style.backgroundImage = `url("${def.loading}")`;
+      }
+
+      wrapper.appendChild(newImg);
+      wrapper.appendChild(icon);
+
+      img.replaceWith(wrapper);
+    });
+
+    // 通知 LazyLoad 更新
+    if (window.lazyLoadInstance?.update) {
+      window.lazyLoadInstance.update();
+    }
+  }
+  
+</script>
+
+<!-- required -->
+<script src="/js/main.js?v=1.33.1" defer></script>
+
+<script type="text/javascript">
+  const applyTheme = (theme) => {
+    if (theme === 'auto') {
+      document.documentElement.removeAttribute('data-theme')
+    } else {
+      document.documentElement.setAttribute('data-theme', theme)
+    }
+
+    // applyThemeToGiscus(theme)
+  }
+
+  // FIXME: 这会导致无法使用 preferred_color_scheme 以外的主题
+  const applyThemeToGiscus = (theme) => {
+    // theme = theme === 'auto' ? 'preferred_color_scheme' : theme
+    const cmt = document.getElementById('giscus')
+    if (cmt) {
+      // This works before giscus load.
+      cmt.setAttribute('data-theme', theme)
+    }
+
+    const iframe = document.querySelector('#comments > section.giscus > iframe')
+    if (iframe) {
+      // This works after giscus loaded.
+      const src = iframe.src
+      const newSrc = src.replace(/theme=[\w]+/, `theme=${theme}`)
+      iframe.src = newSrc
+    }
+  }
+
+  const switchTheme = () => {
+    // light -> dark -> auto -> light -> ...
+    const currentTheme = document.documentElement.getAttribute('data-theme')
+    let newTheme;
+    switch (currentTheme) {
+      case 'light':
+        newTheme = 'dark'
+        break
+      case 'dark':
+        newTheme = 'auto'
+        break
+      default:
+        newTheme = 'light'
+    }
+    applyTheme(newTheme)
+    window.localStorage.setItem('Stellar.theme', newTheme)
+    utils.dark.mode = newTheme === 'auto' ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : newTheme;
+    utils.dark.method.toggle.start();
+
+    const messages = {
+      light: `Switched to Light Mode`,
+      dark: `Switched to Dark Mode`,
+      auto: `Switched to Auto Mode`,
+    }
+    hud?.toast?.(messages[newTheme])
+  }
+
+  (() => {
+    // Apply user's preferred theme, if any.
+    const theme = window.localStorage.getItem('Stellar.theme')
+    if (theme !== null) {
+      applyTheme(theme)
+    } else {
+      utils.dark.mode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    utils.dark.method.toggle.start();
+  })()
+</script>
+
+
+<!-- optional -->
+
+
+
+<script defer>
+  window.addEventListener('DOMContentLoaded', (event) => {
+    ctx.services = Object.assign({}, JSON.parse(`{"mdrender":{"js":"/js/services/mdrender.js"},"siteinfo":{"js":"/js/services/siteinfo.js","api":null},"ghinfo":{"js":"/js/services/ghinfo.js"},"rating":{"js":"/js/services/rating.js","api":"https://star-vote.xaox.cc/api/rating"},"vote":{"js":"/js/services/vote.js","api":"https://star-vote.xaox.cc/api/vote"},"sites":{"js":"/js/services/sites.js"},"friends":{"js":"/js/services/friends.js"},"friends_and_posts":{"js":"/js/services/friends_and_posts.js"},"timeline":{"js":"/js/services/timeline.js"},"fcircle":{"js":"/js/services/fcircle.js"},"weibo":{"js":"/js/services/weibo.js"},"memos":{"js":"/js/services/memos.js"},"voice":{"js":"/js/plugins/voice.js"},"video":{"js":"/js/plugins/video.js"},"download-file":{"js":"/js/plugins/download-file.js"},"twikoo":{"js":"/js/services/twikoo_latest_comment.js"},"waline":{"js":"/js/services/waline_latest_comment.js"},"artalk":{"js":"/js/services/artalk_latest_comment.js"},"giscus":{"js":"/js/services/giscus_latest_comment.js"},"contributors":{"edit_this_page":{"_posts/":null,"wiki/stellar/":"https://github.com/xaoxuu/hexo-theme-stellar-docs/blob/main/"},"js":"/js/services/contributors.js"}}`));
+    for (let id of Object.keys(ctx.services)) {
+      const js = ctx.services[id].js;
+      if (id == 'siteinfo') {
+        ctx.cardlinks = document.querySelectorAll('a.link-card[cardlink]');
+        if (ctx.cardlinks?.length > 0) {
+          utils.js(js, { defer: true }).then(function () {
+            setCardLink(ctx.cardlinks);
+          });
+        }
+      } else if (id == 'voice') {
+        ctx.voiceAudios = document.querySelectorAll('.voice>audio');
+        if (ctx.voiceAudios?.length > 0) {
+          utils.js(js, { defer: true }).then(function () {
+            createVoiceDom(ctx.voiceAudios);
+          });
+        }
+      } else if (id == 'video') {
+        ctx.videos = document.querySelectorAll('.video>video');
+        if (ctx.videos?.length > 0) {
+          utils.js(js, { defer: true }).then(function () {
+            videoEvents(ctx.videos);
+          });
+        }
+      } else if (id == 'download-file') {
+        ctx.files = document.querySelectorAll('.file');
+        if (ctx.files?.length > 0) {
+          utils.js(js, { defer: true }).then(function () {
+            downloadFileEvent(ctx.files);
+          });
+        }
+      } else {
+        const els = document.getElementsByClassName(`ds-${id}`);
+        if (els?.length > 0) {
+          utils.jq(() => {
+            if (id == 'timeline' || 'memos' || 'marked') {
+              utils.js(deps.marked).then(function () {
+                utils.js(js, { defer: true });
+              });
+            } else {
+              utils.js(js, { defer: true });
+            }
+          });
+        }
+      }
+    }
+
+    // chat iphone time
+    let phoneTimes = document.querySelectorAll('.chat .status-bar .time');
+
+    if (phoneTimes.length > 0) {
+      NowTime();
+      var date = new Date();
+      var sec = date.getSeconds();
+      var firstAdjustInterval = setInterval(firstAdjustTime, 1000 * (60 - sec));
+    }
+
+    function firstAdjustTime() {
+      NowTime();
+      clearInterval(firstAdjustInterval);
+      setInterval(NowTime, 1000 * 60);
+    }
+
+    function NowTime() {
+      for (let i = 0; i < phoneTimes.length; ++i) {
+        var timeSpan = phoneTimes[i];
+        var date = new Date();
+        var hour = date.getHours();
+        var min = date.getMinutes();
+        timeSpan.innerHTML = check(hour) + ":" + check(min);
+      }
+    };
+
+    function check(val) {
+      if (val < 10) {
+        return ("0" + val);
+      }
+      return (val);
+    }
+
+    // chat quote
+    const chat_quote_obverser = new IntersectionObserver((entries, observer) => {
+      entries.filter((entry) => { return entry.isIntersecting }).sort((a, b) => a.intersectionRect.y !== b.intersectionRect.y ? a.intersectionRect.y - b.intersectionRect.y : a.intersectionRect.x - b.intersectionRect.x).forEach((entry, index) => {
+          observer.unobserve(entry.target);
+          setTimeout(() => {
+            entry.target.classList.add('quote-blink');
+            setTimeout(() => {
+              entry.target.classList.remove('quote-blink');
+            }, 1000);
+          }, Math.max(100, 16) * (index + 1));
+        });
+    });
+
+    var chatQuotes = document.querySelectorAll(".chat .talk .quote");
+    chatQuotes.forEach((quote) => {
+      quote.addEventListener('click', function () {
+        var chatCellDom = document.getElementById("quote-" + quote.getAttribute("quotedCellTag"));
+        if (chatCellDom) {
+          var chatDiv = chatCellDom.parentElement;
+          var mid = chatDiv.clientHeight / 2;
+          var offsetTop = chatCellDom.offsetTop;
+          if (offsetTop > mid - chatCellDom.clientHeight / 2) {
+            chatDiv.scrollTo({
+              top: chatCellDom.offsetTop - mid + chatCellDom.clientHeight / 2,
+              behavior: "smooth"
+            });
+          } else {
+            chatDiv.scrollTo({
+              top: 0,
+              behavior: "smooth"
+            });
+          }
+          chat_quote_obverser.observe(chatCellDom);
+        }
+      });
+    });
+  });
+</script>
+
+<script>
+  window.addEventListener('DOMContentLoaded', (event) => {
+    ctx.search = {
+      path: `/search.json`,
+    }
+    utils.js('/js/search/local-search.js', { defer: true });
+  });
+</script><script>
+  window.FPConfig = {
+    delay: 0,
+    ignoreKeywords: [],
+    maxRPS: 5,
+    hoverDelay: 25
+  };
+</script>
+<script defer src="https://gcore.jsdelivr.net/npm/flying-pages@2/flying-pages.min.js"></script><script>
+  ctx.fancybox = {
+    selector: `.timenode p>img`,
+    css: `https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css`,
+    js: `https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js`
+  };
+  var selector = '[data-fancybox]:not(.error), .with-fancybox .atk-content img:not([atk-emoticon])';
+  if (ctx.fancybox.selector) {
+    selector += `, ${ctx.fancybox.selector}`
+  }
+  var needFancybox = document.querySelectorAll(selector).length !== 0;
+  if (!needFancybox) {
+    const memos = document.getElementsByClassName('ds-memos');
+    if (memos != undefined && memos.length > 0) {
+      needFancybox = true;
+    }
+    const fancybox = document.getElementsByClassName('with-fancybox');
+    if (fancybox != undefined && fancybox.length > 0) {
+      needFancybox = true;
+    }
+  }
+  if (needFancybox) {
+    utils.css(ctx.fancybox.css);
+    utils.js(ctx.fancybox.js, { defer: true }).then(function () {
+      Fancybox.bind(selector, {
+        hideScrollbar: false,
+        Thumbs: {
+          autoStart: false,
+        },
+        caption: (fancybox, slide) => {
+          return slide.triggerEl.alt || slide.triggerEl.dataset.caption || null
+        }
+      });
+    })
+  }
+</script>
+<script>
+  window.addEventListener('DOMContentLoaded', (event) => {
+    const swiper_api = document.getElementById('swiper-api');
+    if (swiper_api != undefined) {
+      utils.css(`https://unpkg.com/swiper@10.3/swiper-bundle.min.css`);
+      utils.js(`https://unpkg.com/swiper@10.3/swiper-bundle.min.js`, { defer: true }).then(function () {
+        const effect = swiper_api.getAttribute('effect') || '';
+        var swiper = new Swiper('.swiper#swiper-api', {
+          slidesPerView: 'auto',
+          spaceBetween: 8,
+          centeredSlides: true,
+          effect: effect,
+          rewind: true,
+          pagination: {
+            el: '.swiper-pagination',
+            clickable: true,
+          },
+          navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+          },
+        });
+      })
+    }
+  });
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    window.codeElements = document.querySelectorAll('.code');
+    if (window.codeElements.length > 0) {
+      ctx.copycode = {
+        default_text: `Copy`,
+        success_text: `Copied`,
+        toast: `复制成功`,
+      };
+      utils.js('/js/plugins/copycode.js');
+    }
+  });
+</script>
+
+
+<!-- inject -->
+
+</div></body></html>
