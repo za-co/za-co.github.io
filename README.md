@@ -10,9 +10,9 @@
 
 ### 🛠️ 博客构建工具
 本博客基于以下优秀的开源项目构建：
-* **Hexo**: 快速、简洁且高效的静态博客框架。
-* **Hexo Theme Stellar**: 由 [@xaoxuu](https://github.com/xaoxuu/hexo-theme-stellar) 开发的强大主题，具有极高的定制性和现代化的排版设计。
-* **Game-Icon-Pack**: 由 [@Nieobie](https://github.com/Nieobie/Game-Icon-Pack) 提供的精美游戏风格图标包，为博客注入了独特的视觉元素。
+* **Hexo**: 快速、简洁且高效的静态博客框架。[hexo](https://github.com/hexojs/hexo/)
+* **Hexo Theme Stellar**: 由 [xaoxuu](https://github.com/xaoxuu/hexo-theme-stellar) 开发的强大主题，具有极高的定制性和现代化的排版设计。
+* **Game-Icon-Pack**: 由 [Nieobie](https://github.com/Nieobie/Game-Icon-Pack) 提供的精美游戏风格图标包，为博客注入了独特的视觉元素。
 
 ---
 
