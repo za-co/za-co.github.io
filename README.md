@@ -20,6 +20,6 @@ Welcome to my personal blog! This is a dedicated space where I document my journ
 
 ### 🛠️ Built With
 This blog is powered and styled by these amazing open-source projects:
-* **Hexo**: A fast, simple, and powerful blog framework.(https://github.com/hexojs/hexo)
-* **Hexo Theme Stellar**: A highly customizable and modern theme created by [@xaoxuu](https://github.com/xaoxuu/hexo-theme-stellar).
-* **Game-Icon-Pack**: A collection of beautiful game-styled icons provided by [@Nieobie](https://github.com/Nieobie/Game-Icon-Pack), adding unique visual elements to the site.
+* **Hexo**: A fast, simple, and powerful blog framework.[hexo](https://github.com/hexojs/hexo)
+* **Hexo Theme Stellar**: A highly customizable and modern theme created by [xaoxuu](https://github.com/xaoxuu/hexo-theme-stellar).
+* **Game-Icon-Pack**: A collection of beautiful game-styled icons provided by [Nieobie](https://github.com/Nieobie/Game-Icon-Pack), adding unique visual elements to the site.
