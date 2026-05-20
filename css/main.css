@@ -33,6 +33,28 @@
 :root {
   --gap-max: calc(var(--gap-margin) + var(--gap-padding));
 }
+.l_body .l_left {
+  margin: 0 !important;
+  max-height: 100vh !important;
+  border-radius: 0 !important;
+  top: 0 !important;
+}
+.l_body .l_left .sidebg {
+  border-radius: 0 !important;
+}
+.l_body .l_left .leftbar-container {
+  height: 100vh !important;
+  border-radius: 0 !important;
+}
+.l_body .l_left .leftbar-container:before,
+.l_body .l_left .leftbar-container:after {
+  border-radius: 0 !important;
+}
+.l_body .l_right {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  border-radius: 0 !important;
+}
 :root {
   --hue: 192deg;
   --sat: 98%;
@@ -7224,17 +7246,7 @@ details.toc[open] >div.body section .header+.doc_tree {
   --saturate: 400%;
   --blur-px: 100px;
   --background-opacity: 1;
-  background-position: center;
-  background-size: cover;
-  --inset: 32px;
-  --background-opacity: 0.8;
-  background-image: url("https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.13/image/sidebar-bg1@small.jpg");
-  filter: saturate(var(--saturate)) blur(var(--blur-px)) opacity(var(--background-opacity));
-}
-@media screen and (prefers-color-scheme: dark) {
-  .l_left .sidebg {
-    --background-opacity: 0.6;
-  }
+  background-color: rgba(238,238,238,0.18);
 }
 .l_left .leftbar-container {
   height: calc(100vh - var(--gap-margin) * 2 - 96px);
@@ -7263,22 +7275,6 @@ details.toc[open] >div.body section .header+.doc_tree {
   left: 0;
   right: 0;
   border-radius: 24px;
-}
-@media screen and (min-width: 667px) {
-  .l_left .leftbar-container:before {
-    background: rgba(255,255,255,0.5);
-    box-shadow: inset 0 0 32px 1px rgba(255,255,255,0.5);
-    backdrop-filter: saturate(300%);
-    -webkit-backdrop-filter: saturate(300%);
-    mask: linear-gradient(#000, rgba(0,0,0,0.5), 70%, transparent, 90%, transparent);
-    -webkit-mask: linear-gradient(#000, rgba(0,0,0,0.5), 70%, transparent, 90%, transparent);
-  }
-}
-@media screen and (prefers-color-scheme: dark) {
-  .l_left .leftbar-container:before {
-    background: rgba(255,255,255,0.05);
-    box-shadow: inset 0 0 32px 1px rgba(255,255,255,0.1);
-  }
 }
 @media screen and (max-width: 667px) {
   .l_left {
@@ -8509,16 +8505,16 @@ details.toc[open] >div.body section .header+.doc_tree {
   font-weight: 500;
 }
 .l_body[type='tech'] article.content h2 >a:first-child:before {
-  content: '#';
+  content: '';
 }
 .l_body[type='tech'] article.content h3 >a:first-child:before {
-  content: '=';
+  content: '';
 }
 .l_body[type='tech'] article.content h4 >a:first-child:before {
-  content: '|';
+  content: '';
 }
 .l_body[type='tech'] article.content h5 >a:first-child:before {
-  content: ':';
+  content: '';
 }
 .md-text.error-page {
   text-align: center;
